@@ -26,7 +26,7 @@ from telegram.ext import (
 from telegram.ext.dispatcher import DispatcherHandlerStop, run_async
 from telegram.utils.helpers import escape_markdown
 
-from SaitamaRobot import (
+from LaylaRobot import (
     ALLOW_EXCL,
     CERT_PATH,
     DONATION_LINK,
@@ -50,48 +50,59 @@ from SaitamaRobot import (
 
 # needed to dynamically load modules
 # NOTE: Module order is not guaranteed, specify that in the config file!
-from SaitamaRobot.modules import ALL_MODULES
-from SaitamaRobot.modules.helper_funcs.chat_status import is_user_admin
-from SaitamaRobot.modules.helper_funcs.misc import paginate_modules
-from SaitamaRobot.modules.helper_funcs.alternate import typing_action
-from SaitamaRobot.modules.helper_funcs.admin_rights import user_can_ban
-from SaitamaRobot.modules.helper_funcs.readable_time import get_readable_time
+from LaylaRobot.modules import ALL_MODULES
+from LaylaRobot.modules.helper_funcs.chat_status import is_user_admin
+from LaylaRobot.modules.helper_funcs.misc import paginate_modules
+from LaylaRobot.modules.helper_funcs.alternate import typing_action
+from LaylaRobot.modules.helper_funcs.admin_rights import user_can_ban
+from LaylaRobot.modules.helper_funcs.readable_time import get_readable_time
+import LaylaRobot.modules.sql.users_sql as sql
 
 
 PM_START_TEXT = """
-Hello there,The name's [𝙎𝙪𝙯𝙪𝙮𝙖](https://telegra.ph/file/5bcbee541234987308553.jpg)
-I am an 𝐴𝑛𝑖𝑚𝑒 Themed Group Managing Bot and I will help in managing your group
-✪ Make sure you read *INFO* Section Below.✪ 
+──「 [Oda Nobunaga](https://telegra.ph/file/fa5805751e44608b1e162.png) 」──
+*Yoshaa! {},*
+*I'm Anime themed group management bot*
+I've some features for you :)
+➖➖➖➖➖➖➖➖➖➖➖➖➖
+• *Uptime:* `{}`
+• `{}` *users, across* `{}` *chats.*
+➖➖➖➖➖➖➖➖➖➖➖➖➖
+➛ Find the list of available commands with /help ××
 """
 
 buttons = [
     [        
         InlineKeyboardButton(
-        text="INFO", callback_data="aboutmanu_"
+        text="About Me", callback_data="aboutmanu_"
         ),
     ],
-    [        
+     [
+        InlineKeyboardButton(text="❔Help", callback_data="help_back"),
         InlineKeyboardButton(
-        text="❔Help & Commands", callback_data="help_back"
+            text="📡Updates", url=f"https://t.me/UserLazyXBot"
         ),
     ],
     [
         InlineKeyboardButton(
-        text="💫 Add Suzuya to your group 💫", url="t.me/suzuya_probot?startgroup=true"
+        text="➕Add Oda to your group", url="t.me/OdaRobot?startgroup=true"
         ),
     ]
 ]
 
 
 HELP_STRINGS = """
-*Main Commands :* [ʕ·ᴥ·ʔ](https://telegra.ph/file/5534384d2f2b2d8e6fdbb.jpg)
-✪ /start: Starts me! You've probably already used this.
-✪ /help: Click this, I'll let you know about myself!
-✪ /settings: 
-   ◔ in PM: will send you your settings for all supported modules.
-   ◔ in a Group: will redirect you to pm, with all that chat's settings.
-"""
+*Main* commands available:
+*I'm Maintained By* @RxyMX 
+Bug Report to @OdaSupport[.](https://telegra.ph/file/f8b3ba005b0a685048ba2.jpg)
+ ➛ /help: PM's you this message.
+ ➛ /help <module name>: PM's you info about that module.
+ ➛ /settings:
+   ❂ in PM: will send you your settings for all supported modules.
+   ❂ in a group: will redirect you to pm, with all that chat's settings."""
 
+LAYLA_IMG = "https://telegra.ph/file/fa5805751e44608b1e162.png"
+ODA_IMG = "https://telegra.ph/file/ffe156089bcb0eb0bf239.jpg"
 
 IMPORTED = {}
 MIGRATEABLE = []
@@ -107,7 +118,7 @@ USER_SETTINGS = {}
 GDPR = []
 
 for module_name in ALL_MODULES:
-    imported_module = importlib.import_module("SaitamaRobot.modules." + module_name)
+    imported_module = importlib.import_module("LaylaRobot.modules." + module_name)
     if not hasattr(imported_module, "__mod_name__"):
         imported_module.__mod_name__ = imported_module.__name__
 
@@ -156,14 +167,9 @@ def send_help(chat_id, text, keyboard=None):
 
 
 @run_async
-def test(update, context):
-    try:
-        print(update)
-    except:
-        pass
-    update.effective_message.reply_text(
-        "Hola tester! _I_ *have* `markdown`", parse_mode=ParseMode.MARKDOWN
-    )
+def test(update: Update, context: CallbackContext):
+    # pprint(eval(str(update)))
+    # update.effective_message.reply_text("Hola tester! _I_ *have* `markdown`", parse_mode=ParseMode.MARKDOWN)
     update.effective_message.reply_text("This person edited a message")
     print(update.effective_message)
 
@@ -203,15 +209,21 @@ def start(update: Update, context: CallbackContext):
              
             
         else:
+            first_name = update.effective_user.first_name
             update.effective_message.reply_text(
-                PM_START_TEXT,
+                    PM_START_TEXT.format(
+                    escape_markdown(first_name),
+                    escape_markdown(uptime),
+                    sql.num_users(),
+                    sql.num_chats()),
                 reply_markup=InlineKeyboardMarkup(buttons),
                 parse_mode=ParseMode.MARKDOWN,
-                timeout=60, 
+                timeout=60,
             )
     else:
-        update.effective_message.reply_text(
-            "I'm awake already!\n<b>Haven't slept since:</b> <code>{}</code>"
+        update.effective_message.reply_photo(
+            ODA_IMG,
+            caption="I'm awake already!\n<b>Haven't slept since:</b> <code>{}</code>"
             .format(uptime),
             parse_mode=ParseMode.HTML)
    
@@ -250,9 +262,9 @@ def SaitamaRobot_about_callback(update, context):
     if query.data == "aboutmanu_":
         query.message.edit_text(
             text=f"*Hi again! The name's {dispatcher.bot.first_name}. \n\nAs  You I'm An Anime Themed Group Management Bot.* "
-                 f"\n\n Join [Updates Channel](https://t.me/SuzuyaUpdates) To Keep Yourself Updated About {dispatcher.bot.first_name}."
-                 f"\n\n I have the normal GROUP MANAGING functions like flood control, a warning system etc but I mainly have the advanced and handy Antispam system and the SIBYL banning system which safegaurds and helps your group from spammers."
-                 f"\n\nI Can Manage Your Groups Smoothly, With Some Special Features. [◖⚆ᴥ⚆◗](https://telegra.ph/file/7f6a4d656e89553340af9.jpg)."
+                 f"\n\n Join [Updates Channel](https://t.me/UserLazyXBot) To Keep Yourself Updated About {dispatcher.bot.first_name}."
+                 f"\n\n I have the normal GROUP MANAGING functions like flood control, a warning system etc but I mainly have the advanced and handy Antispam system and helps your group from spammers."
+                 f"\n\nI Can Manage Your Groups Smoothly, With Some Special Features. [◖⚆ᴥ⚆◗](https://telegra.ph/file/fa5805751e44608b1e162.png)."
                  f"\n\nYou Can Know More About Me By Clicking The Below Buttons.",
             parse_mode=ParseMode.MARKDOWN,
             disable_web_page_preview=True,
@@ -263,7 +275,7 @@ def SaitamaRobot_about_callback(update, context):
                     InlineKeyboardButton(text="T & C", callback_data="aboutmanu_tac")
                   ],
                  [
-                    InlineKeyboardButton(text="❔Help & Commands", callback_data="help_back")
+                    InlineKeyboardButton(text="❔Help", callback_data="help_back")
                  ],
                  [
                     InlineKeyboardButton(text="Back", callback_data="aboutmanu_back")
@@ -283,7 +295,7 @@ def SaitamaRobot_about_callback(update, context):
         query.message.edit_text(
             text=f"* ｢ BASIC HELP 」*"
                  f"\nIf You Can Also Add {dispatcher.bot.first_name} To Your Chats By Clicking [Here](http://t.me/{dispatcher.bot.username}?startgroup=true) And Selecting Chat. \n"
-                 f"\n\nYou Can Know Main commands of {dispatcher.bot.first_name} by Just Clicking [Here](https://telegra.ph/SUZUYA-GM-BOT-12-16).\n"
+                 f"\n\nYou Can Know Main commands of {dispatcher.bot.first_name} by Just Clicking [Here](http://t.me/OdaRobot?start=help).\n"
                  f"",
             parse_mode=ParseMode.MARKDOWN,
             disable_web_page_preview=True,
@@ -297,7 +309,7 @@ def SaitamaRobot_about_callback(update, context):
     elif query.data == "aboutmanu_credit":
         query.message.edit_text(
             text=f"*{dispatcher.bot.first_name} Is A Powerful Bot For Managing Groups With Additional Features.*"
-                 f"\n\nFork Of [Shoko](https://github.com/gizmostuffin/Shoko) + [Saitama](https://github.com/AnimeKaizoku/SaitamaRobot)."
+                 f"\n\nFork Of [DaisyX](https://github.com/TeamDaisyX/DaisyX/tree/main/DaisyX) + [Saitama](https://github.com/AnimeKaizoku/SaitamaRobot)."
                  f"\n\n{dispatcher.bot.first_name}'s Licensed Under The GNU _(General Public License v3.0)_"
                  f"\n\nIf Any Question About {dispatcher.bot.first_name}, \nLet Us Know At @{SUPPORT_CHAT}.",
             parse_mode=ParseMode.MARKDOWN,
